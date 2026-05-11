@@ -1,0 +1,60 @@
+name: Deploy CasaMulher Web to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: CasaMulher.Web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: CasaMulher.Web
+        run: npm ci
+
+      - name: Build
+        working-directory: CasaMulher.Web
+        env:
+          GITHUB_PAGES: "true"
+          VITE_DEMO_MODE: "true"
+          VITE_API_URL: ""
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: CasaMulher.Web/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
